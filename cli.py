@@ -5,6 +5,7 @@ import getpass
 import argparse
 import cqupt_internet
 
+__installed_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.toml')
 
 def parse_args():
     """解析命令行参数"""
@@ -66,8 +67,8 @@ if __name__ == "__main__":
             user_config.update(loaded_user_config)
 
         # 否则尝试读取安装目录的./config.toml
-        elif os.path.exists('./config.toml') and os.path.isfile('./config.toml'):
-            with open('./config.toml', 'r', encoding='utf-8') as f:
+        elif os.path.exists(__installed_config_path) and os.path.isfile(__installed_config_path):
+            with open(__installed_config_path, 'r', encoding='utf-8') as f:
                 loaded_user_config = toml.load(f)
             user_config.update(loaded_user_config)
 
