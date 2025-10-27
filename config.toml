@@ -1,4 +1,4 @@
 account = ''  # 统一认证码
-password = ''  # 宽带密码
+password = ''  # 宽带密码，可以留空以在命令行中交互式输入
 isp = ''  # 运营商 电信:telecom 移动:cmcc 联通:unicom
-platform = ''  # 登录到的平台 电脑端:0/pc 手机端:1/mobile
+platform = '0'  # 登录到的平台 电脑端:0/pc 手机端:1/mobile

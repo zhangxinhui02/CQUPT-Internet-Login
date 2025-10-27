@@ -12,7 +12,6 @@ config_web_server = {
 }
 url_web_server = (f'{config_web_server["scheme"]}://'
                   f'{config_web_server["server"]}:{config_web_server["port"]}{config_web_server["uri"]}')
-
 config_auth_server = {
     'scheme': 'http',
     'server': '192.168.200.2',
@@ -22,19 +21,11 @@ config_auth_server = {
 url_auth_server = (f'{config_auth_server["scheme"]}://'
                    f'{config_auth_server["server"]}:{config_auth_server["port"]}{config_auth_server["uri"]}')
 
-# 预编译正则表达式，解析已登录的账户和运营商
+# 预编译正则表达式，用于解析已登录的账户和运营商
 __re_parse_account_isp = re.compile(
     r"uid\s*=\s*['\"](\d+)(?:@([A-Za-z0-9]+))?['\"]",
     re.IGNORECASE
 )
-
-
-def __parse_account_isp(content: str) -> tuple[str, str] | None:
-    """从网页中解析已登录的账户和运营商，未解析到则返回None"""
-    m = __re_parse_account_isp.search(content)
-    if m:
-        return m.group(1), m.group(2)
-    return None
 
 
 def __get_ip_mac() -> tuple[str, str]:
@@ -67,11 +58,15 @@ def __parse_json(data: str) -> dict:
     return json.loads(_result_json)
 
 
-def get_status() -> tuple[str, str] | None:
-    """获取已登录的账户和运营商，未登录则返回None"""
+def __get_status() -> tuple[str, str] | None:
+    """解析已登录的账户和运营商并返回，未登录则返回None"""
     response_webpage = requests.get(url_web_server)
     response_webpage.raise_for_status()
-    return __parse_account_isp(response_webpage.text)
+
+    m = __re_parse_account_isp.search(response_webpage.text)
+    if m:
+        return m.group(1), m.group(2)
+    return None
 
 
 def login(account: str, password: str, isp: str, platform: str = '0') -> bool:
@@ -83,19 +78,21 @@ def login(account: str, password: str, isp: str, platform: str = '0') -> bool:
     :param platform: 登录到的平台 电脑端:``0``/``pc`` 手机端:``1``/``mobile``
     :return: 是否登录成功
     """
-    status = get_status()
+    isp = isp.strip().lower()
+    platform = platform.strip().lower()
+    assert isp in ['telecom', 'cmcc', 'unicom'], 'Unknown ISP.'
+    assert platform in ['0', 'pc', '1', 'mobile'], 'Unknown platform.'
+
+    status = __get_status()
     if status is not None:
         print(f'You have already logged in as account `{status[0]}` from ISP `{status[1].title()}`.')
         return True
     ip, mac = __get_ip_mac()
 
-    if platform.strip().lower() in ['0', 'pc']:
+    if platform == 'pc':
         platform = '0'
-    elif platform.strip().lower() in ['1', 'mobile']:
+    elif platform == 'mobile':
         platform = '1'
-    else:
-        print(f'Unknown platform: `{platform}`.')
-        return False
 
     params = {
         'c': 'Portal',
@@ -128,7 +125,7 @@ def logout() -> bool:
     退出校园网宽带登录
     :return: 是否成功退出登录
     """
-    status = get_status()
+    status = __get_status()
     if status is None:
         print(f'You have not logged in yet.')
         return True
@@ -155,3 +152,14 @@ def logout() -> bool:
           f'\tIP: {ip}\n'
           f'\tMAC: {mac}')
     return True
+
+
+def show_status():
+    """输出登录状态"""
+    status = __get_status()
+    if status is None:
+        print(f'You have not logged in yet.')
+    else:
+        print(f'You have already logged in. Detail:\n'
+              f'\tAccount: {status[0]}\n'
+              f'\tISP: {status[1].title()}')

@@ -1,0 +1,106 @@
+#!/bin/python3
+import os
+import toml
+import getpass
+import argparse
+import cqupt_internet
+
+
+def parse_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description=f'A CLI tool for logging in and logging out of CQUPT Internet.')
+    subparsers = parser.add_subparsers(dest="action", required=True, help="Available actions.")
+
+    # login操作
+    login_parser = subparsers.add_parser("login", help="Login to CQUPT Internet.")
+    login_parser.add_argument("-a", "--account", "-u", "--user", help="Account ID.")
+    login_parser.add_argument(
+        "-p", "--password",
+        help="Password. Not recommended to use this parameter in CLI. For security, it is recommended that "
+             "entering password interactively without using this parameter."
+    )
+    login_parser.add_argument("-i", "--isp", help="Your ISP name. Optional: telecom | cmcc | unicom")
+    login_parser.add_argument(
+        "-P", "--platform", help="The platform that to log in to. Optional: 0/pc | 1/mobile"
+    )
+    login_parser.add_argument(
+        "-c", "--config", help="Using config file instead of cli params. "
+                               "Default: ~/.config/cqupt-internet.toml and ./config.toml"
+    )
+
+    # logout操作
+    subparsers.add_parser("logout", help="Logout from CQUPT Internet.")
+
+    # status操作
+    subparsers.add_parser("status", help="Show login status.")
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    if args.action == "login":
+        # 默认配置
+        user_config = {
+            'account': None,
+            'password': None,
+            'isp': None,
+            'platform': '0'
+        }
+
+        # 读取配置文件
+        # 用户指定了配置文件，则读取并覆盖默认配置
+        if args.config:
+            if os.path.exists(args.config) and os.path.isfile(args.config):
+                with open(args.config, 'r', encoding='utf-8') as f:
+                    loaded_user_config = toml.load(f)
+                user_config.update(loaded_user_config)
+            else:
+                print(f'Config file `{args.config}` not found.')
+                exit(1)
+        # 否则尝试读取~/.config/cqupt-internet.toml
+        elif os.path.exists('~/.config/cqupt-internet.toml') and os.path.isfile('~/.config/cqupt-internet.toml'):
+            with open('~/.config/cqupt-internet.toml', 'r', encoding='utf-8') as f:
+                loaded_user_config = toml.load(f)
+            user_config.update(loaded_user_config)
+
+        # 否则尝试读取安装目录的./config.toml
+        elif os.path.exists('./config.toml') and os.path.isfile('./config.toml'):
+            with open('./config.toml', 'r', encoding='utf-8') as f:
+                loaded_user_config = toml.load(f)
+            user_config.update(loaded_user_config)
+
+        # 解析命令行传入的配置，覆盖已有配置
+        if args.account:
+            user_config['account'] = args.account
+        if args.password:
+            user_config['password'] = args.password
+        if args.isp:
+            user_config['isp'] = args.isp
+        if args.platform:
+            user_config['platform'] = args.platform
+
+        # 检查缺失的参数
+        assert user_config['account'], 'Account required.'
+        if not user_config['password']:
+            user_config['password'] = getpass.getpass('Password: ')
+        assert user_config['isp'], 'ISP required.'
+
+        # 登录
+        cqupt_internet.login(
+            account=user_config['account'],
+            password=user_config['password'],
+            isp=user_config['isp'],
+            platform=user_config['platform']
+        )
+
+    elif args.action == "logout":
+        cqupt_internet.logout()
+
+    elif args.action == "status":
+        cqupt_internet.show_status()
+
+    else:
+        print(f'Unknown action: {args.action}')
+        exit(1)
