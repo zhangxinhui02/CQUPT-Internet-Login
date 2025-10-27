@@ -1,0 +1,4 @@
+account = ''  # 统一认证码
+password = ''  # 宽带密码
+isp = ''  # 运营商 电信:telecom 移动:cmcc 联通:unicom
+platform = ''  # 登录到的平台 电脑端:0/pc 手机端:1/mobile
