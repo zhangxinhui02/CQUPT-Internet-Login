@@ -1,0 +1,14 @@
+[Unit]
+Description=A service that keeps the system logged in to CQUPT Internet.
+After=network.target
+
+[Service]
+Type=simple
+Environment="PYTHONUNBUFFERED=1"
+ExecStartPre=/usr/bin/sleep 1s
+ExecStart=cqupt-internet login -k --interval ${INTERVAL}
+RemainAfterExit=yes
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

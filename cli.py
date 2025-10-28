@@ -1,15 +1,18 @@
-#!/bin/python3
 import os
+import time
 import toml
 import getpass
 import argparse
+import datetime
 import cqupt_internet
 
 __installed_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.toml')
 
 def parse_args():
     """解析命令行参数"""
-    parser = argparse.ArgumentParser(description=f'A CLI tool for logging in and logging out of CQUPT Internet.')
+    parser = argparse.ArgumentParser(
+        prog='cqupt-internet', description=f'A CLI tool for logging in and logging out of CQUPT Internet.'
+    )
     subparsers = parser.add_subparsers(dest="action", required=True, help="Available actions.")
 
     # login操作
@@ -20,13 +23,21 @@ def parse_args():
         help="Password. Not recommended to use this parameter in CLI. For security, it is recommended that "
              "entering password interactively without using this parameter."
     )
-    login_parser.add_argument("-i", "--isp", help="Your ISP name. Optional: telecom | cmcc | unicom")
+    login_parser.add_argument("-i", "--isp", choices=['telecom', 'cmcc', 'unicom'],
+                              help="Your ISP name. Optional: telecom | cmcc | unicom")
     login_parser.add_argument(
-        "-P", "--platform", help="The platform that to log in to. Optional: 0/pc | 1/mobile"
+        "-P", "--platform", choices=['0', 'pc', '1', 'mobile'],
+        help="The platform that to log in to. Optional: 0/pc | 1/mobile"
     )
     login_parser.add_argument(
         "-c", "--config", help="Using config file instead of cli params. "
                                "Default: ~/.config/cqupt-internet.toml and ./config.toml"
+    )
+    login_parser.add_argument(
+        "-k", "--keep", action='store_true', help="Keep the system logged in to CQUPT Internet."
+    )
+    login_parser.add_argument(
+        "--interval", type=int, default=60, help="Interval seconds when keeping logged status. Default: 60"
     )
 
     # logout操作
@@ -89,12 +100,25 @@ if __name__ == "__main__":
         assert user_config['isp'], 'ISP required.'
 
         # 登录
-        cqupt_internet.login(
-            account=user_config['account'],
-            password=user_config['password'],
-            isp=user_config['isp'],
-            platform=user_config['platform']
-        )
+        if not args.keep:
+            cqupt_internet.login(
+                account=user_config['account'],
+                password=user_config['password'],
+                isp=user_config['isp'],
+                platform=user_config['platform']
+            )
+        else:
+            print(f'Now keeping the system logged in to CQUPT Internet. Interval: {args.interval} seconds.')
+            while True:
+                print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'Checking...')
+                cqupt_internet.login(
+                    account=user_config['account'],
+                    password=user_config['password'],
+                    isp=user_config['isp'],
+                    platform=user_config['platform']
+                )
+                print()
+                time.sleep(args.interval)
 
     elif args.action == "logout":
         cqupt_internet.logout()
