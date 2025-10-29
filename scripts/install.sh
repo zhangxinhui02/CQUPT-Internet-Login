@@ -8,4 +8,8 @@ python3 -m venv .venv
 cp assets/cqupt-internet /usr/bin
 sed -i "s|\${INSTALL_DIR}|${INSTALL_PATH}|g" /usr/bin/cqupt-internet
 chmod +x /usr/bin/cqupt-internet
+echo
+echo "========================================"
 echo "Install succeed."
+echo "========================================"
+echo
