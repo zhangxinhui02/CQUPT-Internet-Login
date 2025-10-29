@@ -11,6 +11,7 @@ if command -v cqupt-internet >/dev/null 2>&1; then
 fi
 
 # 准备Python虚拟环境
+echo "Preparing python virtual environment..."
 python3 -m venv .venv
 .venv/bin/pip3 install -r requirements.txt
 
