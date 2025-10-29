@@ -72,8 +72,9 @@ if __name__ == "__main__":
                 print(f'Config file `{args.config}` not found.')
                 exit(1)
         # 否则尝试读取~/.config/cqupt-internet.toml
-        elif os.path.exists('~/.config/cqupt-internet.toml') and os.path.isfile('~/.config/cqupt-internet.toml'):
-            with open('~/.config/cqupt-internet.toml', 'r', encoding='utf-8') as f:
+        elif (os.path.exists(os.path.expanduser('~/.config/cqupt-internet.toml')) and
+              os.path.isfile(os.path.expanduser('~/.config/cqupt-internet.toml'))):
+            with open(os.path.expanduser('~/.config/cqupt-internet.toml'), 'r', encoding='utf-8') as f:
                 loaded_user_config = toml.load(f)
             user_config.update(loaded_user_config)
 
