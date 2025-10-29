@@ -1,5 +1,5 @@
 param(
-    [string]$Interval = "60",
+    [string]$Interval = "60",  # 登录检查周期（秒），默认为60
     [string]$__original_cwd  # 提权后恢复工作目录的参数
 )
 
