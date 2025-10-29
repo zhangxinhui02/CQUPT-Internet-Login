@@ -66,12 +66,12 @@ Write-Host "Preparing python virtual environment..."
 python -m venv .venv
 .\.venv\Scripts\pip.exe install -r requirements.txt
 
-# 将命令复制到bin目录，并加入PATH环境变量
+# 将命令模板复制到bin目录，并加入PATH环境变量
 Write-Host "Setting command into PATH environment variable..."
 mkdir bin
 Copy-Item .\assets\cqupt-internet.ps1 bin
 (Get-Content .\bin\cqupt-internet.ps1) -replace '\$\{INSTALL_DIR\}', $INSTALL_DIR |
-        Set-Content .\bin\cqupt-internet.ps1  # 将命令中的占位符替换实际安装路径
+        Set-Content .\bin\cqupt-internet.ps1  # 将命令中的路径占位符替换为实际安装路径
 $BIN_PATH = $INSTALL_DIR + '\bin'
 $systemPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 if ($systemPath -notlike "*$BIN_PATH*")
