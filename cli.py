@@ -127,6 +127,7 @@ if __name__ == "__main__":
         assert user_config['isp'], 'ISP required.'
 
         # 登录
+        __already_logged_in = cqupt_internet.get_status()['is_logged_in']  # 临时修复已登录时platform显示错误的问题
         if not args.keep:
             _, info_login = cqupt_internet.login(
                 account=user_config['account'],
@@ -134,7 +135,10 @@ if __name__ == "__main__":
                 isp=user_config['isp'],
                 platform=user_config['platform']
             )
-            __print_info(info_login, print_msg=True, platform=user_config['platform'])
+            if __already_logged_in:
+                __print_info(info_login, print_msg=True)
+            else:
+                __print_info(info_login, print_msg=True, platform=user_config['platform'])
         else:
             print(f'Now keeping the system logged in to CQUPT Internet. Interval: {args.interval} seconds.')
             while True:
