@@ -5,6 +5,9 @@ import socket
 import psutil
 import requests
 
+LOGIN_OUT_TEST_COUNT = 10  # 登录登出操作的最大状态检测次数
+LOGIN_OUT_TEST_INTERVAL_SEC = 1  # 登录登出操作的状态检测间隔秒数
+
 # 认证服务器信息
 config_web_server = {
     'scheme': 'http',
@@ -128,7 +131,7 @@ def login(account: str, password: str, isp: str, platform: str = '0') -> tuple[b
         status['msg'] = 'You have already logged in. No need to log in again.'
         return True, status
 
-    params = {
+    params_login = {
         'c': 'Portal',
         'a': 'login',
         'callback': 'dr1003',
@@ -139,17 +142,29 @@ def login(account: str, password: str, isp: str, platform: str = '0') -> tuple[b
         # 'wlan_user_ipv6': '',
         'wlan_user_mac': status['mac'].replace('-', '').lower()
     }
-    response_login = requests.get(url_auth_server, params=params)
+    response_login = requests.get(url_auth_server, params=params_login)
     response_login.raise_for_status()
-    time.sleep(1)
 
-    status = get_status()
+    # 检查返回结果是否正确
     response_login_json = __parse_json(response_login.text)
-    if response_login_json['result'] != '1' or (not status['is_logged_in']):
-        status['msg'] = f'Login failed. Detail: {response_login.text}'
-        return False, status
-    status['msg'] = 'Login succeed.'
-    return True, status
+    if response_login_json['result'] != '1':
+        new_status = get_status()
+        new_status['msg'] = f'Login failed. Detail: {response_login_json}'
+        return False, new_status
+
+    # 检查是否确实登录成功
+    new_status = None
+    for i in range(LOGIN_OUT_TEST_COUNT):
+        time.sleep(LOGIN_OUT_TEST_INTERVAL_SEC)
+        new_status = get_status()
+        if new_status['is_logged_in']:
+            break
+        if i == LOGIN_OUT_TEST_COUNT - 1:
+            new_status['msg'] = f'Login failed. Wrong status after {LOGIN_OUT_TEST_COUNT} attempts.'
+            return False, new_status
+
+    new_status['msg'] = 'Login succeed.'
+    return True, new_status
 
 
 def logout() -> tuple[bool, dict]:
@@ -162,7 +177,7 @@ def logout() -> tuple[bool, dict]:
         status['msg'] = 'You have not logged in yet. No need to log out.'
         return True, status
 
-    params = {
+    params_logout = {
         'c': 'Portal',
         'a': 'unbind_mac',
         'callback': 'dr1002',
@@ -170,14 +185,26 @@ def logout() -> tuple[bool, dict]:
         'wlan_user_mac': status['mac'].replace('-', '').lower(),
         'wlan_user_ip': status['ip']
     }
-    response_logout = requests.get(url_auth_server, params=params)
+    response_logout = requests.get(url_auth_server, params=params_logout)
     response_logout.raise_for_status()
-    time.sleep(1)
 
-    status = get_status()
+    # 检查返回结果是否正确
     response_logout_json = __parse_json(response_logout.text)
-    if response_logout_json['result'] != '1' or status['is_logged_in']:
-        status['msg'] = f'Logout failed. Detail: {response_logout.text}'
-        return False, status
-    status['msg'] = 'Logout succeed.'
-    return True, status
+    if response_logout_json['result'] != '1':
+        new_status = get_status()
+        new_status['msg'] = f'Logout failed. Detail: {response_logout_json}'
+        return False, new_status
+
+    # 检查是否确实登出成功
+    new_status = None
+    for i in range(LOGIN_OUT_TEST_COUNT):
+        time.sleep(LOGIN_OUT_TEST_INTERVAL_SEC)
+        new_status = get_status()
+        if not new_status['is_logged_in']:
+            break
+        if i == LOGIN_OUT_TEST_COUNT - 1:
+            new_status['msg'] = f'Login failed. Wrong status after {LOGIN_OUT_TEST_COUNT} attempts.'
+            return False, new_status
+
+    new_status['msg'] = 'Logout succeed.'
+    return True, new_status
