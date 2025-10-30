@@ -8,6 +8,7 @@ import cqupt_internet
 
 __installed_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.toml')
 
+
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
@@ -47,6 +48,31 @@ def parse_args():
     subparsers.add_parser("status", help="Show login status.")
 
     return parser.parse_args()
+
+
+def __print_info(info: dict, print_msg: bool = False, platform: str = ''):
+    """
+    按需输出信息
+    :param info: 待输出的信息字典
+    :param print_msg: 是否输出msg并缩进其余内容
+    :param platform: 平台信息，留空则不输出，可选 电脑端:``0``/``pc`` 手机端:``1``/``mobile``
+    """
+    text = f'{info['msg']}\n' if print_msg else ''
+    tab = '\t' if print_msg else ''
+    text += f'{tab}Is logged in: {info["is_logged_in"]}\n'
+    text += f'{tab}Account: {info["account"]}\n'
+    if platform:
+        if platform == '0':
+            platform = 'PC'
+        elif platform == '1':
+            platform = 'Mobile'
+        else:
+            raise ValueError(f'Unknown platform: {platform}')
+        text += f'{tab}Platform: {platform}\n'
+    text += f'{tab}ISP: {info["isp"].title()}\n'
+    text += f'{tab}IP: {info["ip"]}\n'
+    text += f'{tab}MAC: {info["mac"]}'
+    print(text)
 
 
 if __name__ == "__main__":
@@ -102,30 +128,34 @@ if __name__ == "__main__":
 
         # 登录
         if not args.keep:
-            cqupt_internet.login(
+            _, info_login = cqupt_internet.login(
                 account=user_config['account'],
                 password=user_config['password'],
                 isp=user_config['isp'],
                 platform=user_config['platform']
             )
+            __print_info(info_login, print_msg=True, platform=user_config['platform'])
         else:
             print(f'Now keeping the system logged in to CQUPT Internet. Interval: {args.interval} seconds.')
             while True:
                 print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'Checking...')
-                cqupt_internet.login(
+                _, info_login = cqupt_internet.login(
                     account=user_config['account'],
                     password=user_config['password'],
                     isp=user_config['isp'],
                     platform=user_config['platform']
                 )
+                __print_info(info_login, print_msg=True, platform=user_config['platform'])
                 print()
                 time.sleep(args.interval)
 
     elif args.action == "logout":
-        cqupt_internet.logout()
+        _, info_logout = cqupt_internet.logout()
+        __print_info(info_logout, print_msg=True)
 
     elif args.action == "status":
-        cqupt_internet.show_status()
+        info_status = cqupt_internet.get_status()
+        __print_info(info_status, print_msg=False)
 
     else:
         print(f'Unknown action: {args.action}')
