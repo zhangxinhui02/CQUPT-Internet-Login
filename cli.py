@@ -149,7 +149,10 @@ if __name__ == "__main__":
                     isp=user_config['isp'],
                     platform=user_config['platform']
                 )
-                __print_info(info_login, print_msg=True, platform=user_config['platform'])
+                if __already_logged_in:
+                    __print_info(info_login, print_msg=True)
+                else:
+                    __print_info(info_login, print_msg=True, platform=user_config['platform'])
                 print()
                 time.sleep(args.interval)
 
